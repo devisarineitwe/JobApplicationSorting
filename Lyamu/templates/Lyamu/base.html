@@ -1,0 +1,60 @@
+<!-- yourapp/templates/base.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Online Job Application sorting system{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+
+    <!-- Add your custom CSS links or any other head content here -->
+</head>
+<body>
+
+    <header class="bg-dark text-white p-4">
+        <div class="container">
+            <h1>Online Job Application sorting system</h1>
+            <!-- Add navigation links or any other header content here -->
+            <!-- Display logout icon if the user is authenticated -->
+            {% if user.is_authenticated %}
+                <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+            {% else %}
+                <!-- Add navigation links or any other header content here -->
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container mt-4">
+        {% block content %}{% endblock %}
+
+        <!-- Display messages if they exist -->
+        {% if messages %}
+            <div class="mt-4">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </main>
+
+    <footer class="bg-dark text-white p-4 mt-4">
+        <div class="container">
+            <!-- Add footer content here -->
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <!-- Add your custom JavaScript links or any other scripts here -->
+
+</body>
+</html>

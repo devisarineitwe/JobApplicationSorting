@@ -1,0 +1,20 @@
+<!-- yourapp/templates/index.html -->
+
+{% extends 'Lyamu/base.html' %}
+
+{% block title %}Welcome Online Job Application Sorting System {% endblock %}
+
+{% block content %}
+    <div class="jumbotron">
+        <div class="container text-center">
+            <h1 class="display-4">Welcome Online Job Application Sorting System</h1>
+            <p class="lead">An innovative platform for efficient job application and hiring.</p>
+            <hr class="my-4">
+            <p>Explore job opportunities, apply seamlessly, and make the hiring process smarter.</p>
+            <p class="lead">
+                <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">Login</a>
+                <a class="btn btn-secondary btn-lg" href="{% url 'register_user' %}" role="button">Register</a>
+            </p>
+        </div>
+    </div>
+{% endblock %}
