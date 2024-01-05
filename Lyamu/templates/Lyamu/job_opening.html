@@ -1,0 +1,16 @@
+<!-- yourapp/templates/create_job_opening.html -->
+
+{% extends 'base.html' %}
+
+{% block title %}Create Job Opening{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Create Job Opening</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+{% endblock %}
