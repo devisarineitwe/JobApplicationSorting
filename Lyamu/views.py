@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 
+from Lyamu.forms import JobForm
 from Lyamu.models import Job, Candidate, Selection, Application
 
 
@@ -65,3 +66,19 @@ def user_login(request):
 def user_logout(request):
     logout(request)
     return redirect('index')  # Redirect to the index page or any desired page after logout
+
+
+
+@login_required
+def create_job_opening(request):
+    if request.method == 'POST':
+        form = JobForm(request.POST)
+        if form.is_valid():
+            job = form.save(commit=False)
+            job.posted_by = request.user
+            job.save()
+            return redirect('dashboard')  # Redirect to the dashboard or any desired page
+    else:
+        form = JobForm()
+
+    return render(request, 'Lyamu/job_opening.html', {'form': form})
