@@ -6,7 +6,37 @@
 
 {% block content %}
     <div class="container mt-5">
-        <h2>Total Jobs</h2>
-        <p>Total number of jobs: {{ total_jobs }}</p>
+        <h2 class="text-purple">Total Jobs</h2>
+        <h5 class="card-title">Available Jobs: {{ total_jobs }} </h5>
+        {% if total_jobs > 0 %}
+            <div class="row mt-4">
+                {% for job in jobs_list %}
+                    <div class="col-md-6">
+                        <div class="card bg-purple text-blue">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ job.title }}</h5>
+                                <p class="card-text">{{ job.description }}</p>
+                                <!-- Add more job details as needed -->
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card bg-purple text-blue">
+                        <div class="card-body">
+                            <h5 class="card-title">No Jobs Available</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        {% if user.is_superuser %}
+            <div class="mt-4">
+                <a href="{% url 'create_job_opening' %}" class="btn btn-purple">Upload New Job</a>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}
