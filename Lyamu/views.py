@@ -82,3 +82,23 @@ def create_job_opening(request):
         form = JobForm()
 
     return render(request, 'Lyamu/job_opening.html', {'form': form})
+
+
+def jobs(request):
+    total_jobs = Job.objects.count()
+    return render(request, 'Lyamu/jobs_page.html', {'total_jobs': total_jobs})
+
+
+def candidates(request):
+    total_candidates = Candidate.objects.count()
+    return render(request, 'Lyamu/candidates_page.html', {'total_candidates': total_candidates})
+
+
+def applications(request):
+    total_applications = Application.objects.count()
+    return render(request, 'Lyamu/applications_page.html', {'total_applications': total_applications})
+
+
+def selections(request):
+    total_selections = Selection.objects.count()
+    return render(request, 'Lyamu/selections_page.html', {'total_selections': total_selections})
