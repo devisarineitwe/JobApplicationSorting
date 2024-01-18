@@ -2,10 +2,10 @@ from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 
-from Lyamu.forms import JobForm
+from Lyamu.forms import JobForm, ApplicationForm
 from Lyamu.models import Job, Candidate, Selection, Application, Employer
 
 
@@ -93,10 +93,55 @@ def create_job_opening(request):
 
     return render(request, 'Lyamu/job_opening.html', {'form': form})
 
+@login_required
 def jobs(request):
+    # Retrieve the total number of jobs
     total_jobs = Job.objects.count()
-    return render(request, 'Lyamu/jobs_page.html', {'total_jobs': total_jobs})
 
+    # Retrieve the list of jobs
+    jobs_list = Job.objects.all()
+
+    # Check if the user is a superuser
+    is_superuser = request.user.is_superuser
+
+    context = {
+        'total_jobs': total_jobs,
+        'jobs_list': jobs_list,
+        'user': request.user,
+        'is_superuser': is_superuser,
+    }
+
+    return render(request, 'Lyamu/jobs_page.html', context)
+
+def job_details(request, job_id):
+    job = get_object_or_404(Job, pk=job_id)
+    return render(request, 'Lyamu/job_details.html', {'job': job})
+
+
+def apply_job(request, job_id):
+    job = Job.objects.get(pk=job_id)
+
+    if request.method == 'POST':
+        form = ApplicationForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Assuming the user is authenticated, you can access the user from the request
+            user = request.user
+            candidate, created = Candidate.objects.get_or_create(user=user)
+
+            # Save the application
+            application = Application.objects.create(
+                job=job,
+                candidate=candidate,
+                # You can save additional fields from the form
+            )
+
+            # Additional logic like sending email notification to the employer can be added here
+
+            return redirect('job_details', job_id=job_id)
+    else:
+        form = ApplicationForm()
+
+    return render(request, 'Lyamu/apply_job.html', {'form': form, 'job': job})
 
 def candidates(request):
     total_candidates = Candidate.objects.count()

@@ -1,0 +1,33 @@
+<!-- yourapp/templates/Lyamu/job_details.html -->
+
+{% extends 'Lyamu/base.html' %}
+
+{% block title %}{{ job.title }} Details{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2 class="text-purple">{{ job.title }} Details</h2>
+        <div class="card bg-purple text-blue mt-4">
+            <div class="card-body">
+                <h5 class="card-title">{{ job.title }}</h5>
+                <p class="card-text">{{ job.description }}</p>
+                <p class="card-text">Requirements: {{ job.requirements }}</p>
+                <p class="card-text">Importance Level: {{ job.importance_level }}</p>
+                <p class="card-text">Application Deadline: {{ job.application_deadline }}</p>
+                <!-- Add more job details as needed -->
+            </div>
+            {% if not user.is_authenticated %}
+            <div class="mt-4">
+                <p>Please <a href="{% url 'login' %}">login</a> or <a href="{% url 'register_user' %}">register</a> to apply for this job.</p>
+            </div>
+            {% elif job.employer.user != user %}
+            <div class="mt-4">
+                <form method="post" action="{% url 'apply_job' job.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-purple">Apply for this Job</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

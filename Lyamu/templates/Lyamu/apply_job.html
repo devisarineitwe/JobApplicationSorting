@@ -1,0 +1,18 @@
+<!-- yourapp/templates/Lyamu/apply_job.html -->
+
+{% extends 'Lyamu/base.html' %}
+
+{% block title %}Apply for Job{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2 class="text-purple">Apply for Job</h2>
+        <p class="mt-4">You are applying for the job: {{ job.title }}</p>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-purple">Submit Application</button>
+        </form>
+    </div>
+{% endblock %}
