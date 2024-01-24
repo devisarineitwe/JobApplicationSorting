@@ -14,5 +14,6 @@ urlpatterns = [
     path('total_selections_page/', views.selections, name='selections_page'),
     path('job/<int:job_id>/', views.job_details, name='job_details'),
     path('apply_job/<int:job_id>/', views.apply_job, name='apply_job'),
+    path('application_status/<int:job_id>/', views.application_status, name="application_status")
 
 ]

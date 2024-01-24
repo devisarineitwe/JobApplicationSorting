@@ -1,12 +1,15 @@
+from datetime import datetime
+
 from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.models import User
+from django.forms import inlineformset_factory
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
 
-from Lyamu.forms import JobForm, ApplicationForm
-from Lyamu.models import Job, Candidate, Selection, Application, Employer
+from .forms import JobForm, CandidateForm, EducationForm, EducationFormSet
+from Lyamu.models import Job, Candidate, Selection, Application, Employer, Education
 
 
 # Create your views here.
@@ -117,36 +120,108 @@ def job_details(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
     return render(request, 'Lyamu/job_details.html', {'job': job})
 
+def calculate_age(date_of_birth):
+    today = datetime.now()
+    birth_date = datetime.strptime(date_of_birth, '%Y-%m-%d')
+    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+    return age
 
+@login_required
 def apply_job(request, job_id):
-    job = Job.objects.get(pk=job_id)
+    # get the job object from the database
+    job = Job.objects.get(id=job_id)
+    # check if the user is logged in
+    if request.user.is_authenticated:
+        # get or create the candidate object for the user
+        candidate, created = Candidate.objects.get_or_create(user=request.user)
+        # if a new candidate object was created, you can set some default values for the fields
+        if created:
+            candidate.years_of_experience = 0
+            candidate.date_of_birth = None
+            candidate.gender = None
+            candidate.address = None
+            candidate.contact_number = None
+            candidate.email = request.user.email
+            candidate.save()
 
-    if request.method == 'POST':
-        form = ApplicationForm(request.POST, request.FILES)
-        if form.is_valid():
-            # Assuming the user is authenticated, you can access the user from the request
-            user = request.user
-            candidate, created = Candidate.objects.get_or_create(user=user)
+        # check if the candidate has already applied for the job
+        if Application.objects.filter(job=job, candidate=candidate).exists():
+            # redirect to a page that shows the application status
+            return redirect('application_status', job_id=job_id)
 
-            # Save the application
-            application = Application.objects.create(
-                job=job,
-                candidate=candidate,
-                # You can save additional fields from the form
-            )
+        # create a candidate form instance with the candidate data
+        candidate_form = CandidateForm(instance=candidate)
 
-            # Additional logic like sending email notification to the employer can be added here
+        # create an education formset class using the inlineformset_factory function
+        EducationFormSet = inlineformset_factory(Candidate, Education, form=EducationForm, formset=EducationFormSet,
+                                                 extra=1)
+        # check if the candidate object is not None
+        if candidate is not None:
+            # create an education formset instance with the candidate's educations
+            education_formset = EducationFormSet(instance=candidate)
+        else:
+            # create an empty education formset instance
+            education_formset = EducationFormSet()
 
-            return redirect('job_details', job_id=job_id)
+        # check if the request method is POST
+        if request.method == 'POST':
+            # update the candidate form and education formset with the submitted data
+            candidate_form = CandidateForm(request.POST, request.FILES, instance=candidate)
+            education_formset = EducationFormSet(request.POST, instance=candidate)
+
+            # check if the forms are valid
+            if candidate_form.is_valid() and education_formset.is_valid():
+                # save the candidate form and education formset
+                candidate_form.save()
+                education_formset.save()
+
+                # create a new application object for the job and the candidate
+                application = Application(job=job, candidate=candidate)
+                application.save()
+
+                # redirect to a page that shows the application success
+                return redirect('application_success', job_id=job_id)
+
+    # render the template with the forms and the job
+    return render(request, 'apply_job.html',
+                  {'candidate_form': candidate_form, 'education_formset': education_formset, 'job': job})
+
+
+
+
+def application_status(request, job_id):
+    # get the job object from the database
+    job = Job.objects.get(id=job_id)
+
+    # check if the user is logged in and is a candidate
+    if request.user.is_authenticated and hasattr(request.user, 'candidate'):
+        # get the candidate object from the database
+        candidate = request.user.candidate
+
+        # check if the candidate has applied for the job
+        if Application.objects.filter(job=job, candidate=candidate).exists():
+            # get the application object from the database
+            application = Application.objects.get(job=job, candidate=candidate)
+
+            # check if the candidate has been selected for the job
+            if Selection.objects.filter(job=job, candidate=candidate).exists():
+                # get the selection object from the database
+                selection = Selection.objects.get(job=job, candidate=candidate)
+
+                # render the template with the job, application, and selection details
+                return render(request, 'Lyamu/application_status.html', {'job': job, 'application': application, 'selection': selection})
+
+            # if the candidate has not been selected, render the template with the job and application details
+            else:
+                return render(request, 'Lyamu/application_status.html', {'job': job, 'application': application})
+
+        # if the candidate has not applied for the job, redirect to the apply job page
+        else:
+            return redirect('apply_job', job_id=job_id)
+
+    # if the user is not logged in or is not a candidate, redirect to the login page
     else:
-        form = ApplicationForm()
-
-    return render(request, 'Lyamu/apply_job.html', {'form': form, 'job': job})
-
-def candidates(request):
-    total_candidates = Candidate.objects.count()
-    return render(request, 'Lyamu/candidates_page.html', {'total_candidates': total_candidates})
-
+        return redirect('login')
 
 def applications(request):
     total_applications = Application.objects.count()
@@ -156,3 +231,7 @@ def applications(request):
 def selections(request):
     total_selections = Selection.objects.count()
     return render(request, 'Lyamu/selections_page.html', {'total_selections': total_selections})
+
+def candidates(request):
+    total_candidates = Candidate.objects.count()
+    return render(request, "Lyamu/candidates_page.html", {'total_candidates': total_candidates})
