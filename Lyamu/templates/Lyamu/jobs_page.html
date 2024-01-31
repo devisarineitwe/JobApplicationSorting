@@ -12,11 +12,11 @@
             <div class="row mt-4">
                 {% for job in jobs_list %}
                     <div class="col-md-6">
-                        <div class="card bg-purple text-blue">
+                        <div class="card bg-primary text-white">
                             <div class="card-body">
                                 <h5 class="card-title">{{ job.title }}</h5>
                                 <p class="card-text">{{ job.description }}</p>
-                                <h5 class="card-title"><a href="{% url 'job_details' job.id %}">{{ job.title }}</a></h5>
+                                <h5 class="card-title"><a class="text-white" href="{% url 'job_details' job.id %}">{{ job.title }}</a></h5>
                                 <!-- Add more job details as needed -->
                             </div>
                         </div>

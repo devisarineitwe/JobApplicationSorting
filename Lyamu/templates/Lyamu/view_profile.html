@@ -1,0 +1,80 @@
+{% extends 'Lyamu/base.html' %}
+
+{% block content %}
+    <style>
+        /* Custom styles */
+        .profile-container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-top: 50px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .btn-container {
+            margin-top: 20px;
+        }
+        .info-section {
+            margin-top: 20px;
+        }
+        .education-section {
+            margin-top: 20px;
+        }
+        .education-record {
+            margin-bottom: 10px;
+        }
+    </style>
+
+    <div class="container profile-container">
+        <h2 class="text-center">User Profile</h2>
+
+        {% if user.is_authenticated %}
+            <h3 class="text-center">{{ user.username }}</h3>
+            <p class="text-center">Email: {{ user.email }}</p>
+
+            {% if candidate %}
+                <div class="info-section text-center">
+                    <h4>Candidate Information</h4>
+                    {% if candidate.resume %}
+                        <p>Resume: <a href="{{ candidate.resume.url }}" target="_blank">{{ candidate.resume.name }}</a></p>
+                    {% else %}
+                        <p>Resume: Not available</p>
+                    {% endif %}
+                    <p>Years of Experience: {{ candidate.years_of_experience }}</p>
+                    <p>Date of Birth: {{ candidate.date_of_birth }}</p>
+                    <p>Gender: {{ candidate.gender }}</p>
+                    <p>Address: {{ candidate.address }}</p>
+                    <p>Contact Number: {{ candidate.contact_number }}</p>
+                    <p>Email: {{ candidate.email }}</p>
+                </div>
+
+                {% if education_forms %}
+                    <div class="education-section text-center">
+                        <h4>Education Records</h4>
+                        {% for form in education_forms %}
+                            <div class="education-record">
+                                <p>Year: {{ form.year }}, Institution: {{ form.institution }}, Qualification: {{ form.qualification }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center">No education records available</p>
+                {% endif %}
+            {% else %}
+                <p class="text-center">User is not a candidate.</p>
+            {% endif %}
+
+            <div class="btn-container text-center">
+                <a href="{% url 'update_profile' %}" class="btn btn-primary">Edit Profile</a>
+                <a href="{% url 'jobs_page' %}" class="btn btn-success">View Jobs</a>
+            </div>
+
+        {% else %}
+            <p class="text-center">User is not authenticated. <a href="{% url 'login' %}">Login</a></p>
+        {% endif %}
+    </div>
+{% endblock %}

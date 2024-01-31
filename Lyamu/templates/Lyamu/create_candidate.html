@@ -1,0 +1,18 @@
+<!-- create_candidate.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <h2>Create Candidate Profile</h2>
+
+    <!-- Add fields to collect candidate details -->
+    <label for="years_of_experience">Years of Experience:</label>
+    <input type="number" name="years_of_experience" required>
+
+    <!-- Add more fields as needed -->
+
+    <button type="submit">Create Profile</button>
+</form>
+{% endblock %}

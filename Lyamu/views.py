@@ -1,14 +1,11 @@
-from datetime import datetime
-
 from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.contrib.auth.models import User
-from django.forms import inlineformset_factory
+from django.core.mail import send_mail
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
-
-from .forms import JobForm, CandidateForm, EducationForm, EducationFormSet
+from .forms import JobForm, EducationForm
 from Lyamu.models import Job, Candidate, Selection, Application, Employer, Education
 
 
@@ -116,79 +113,177 @@ def jobs(request):
 
     return render(request, 'Lyamu/jobs_page.html', context)
 
+@login_required
 def job_details(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
-    return render(request, 'Lyamu/job_details.html', {'job': job})
+    user = request.user
 
-def calculate_age(date_of_birth):
-    today = datetime.now()
-    birth_date = datetime.strptime(date_of_birth, '%Y-%m-%d')
-    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-    return age
+    try:
+        candidate = Candidate.objects.get(user=user)
+    except Candidate.DoesNotExist:
+        # Redirect user to profile update page if they are not a candidate
+        return redirect('update_profile')
+
+    # Check if the user has already applied for the job
+    has_applied = Application.objects.filter(job=job, candidate=candidate).exists()
+
+    return render(request, 'Lyamu/job_details.html', {'job': job, 'candidate': candidate, 'has_applied': has_applied})
 
 @login_required
 def apply_job(request, job_id):
-    # get the job object from the database
-    job = Job.objects.get(id=job_id)
-    # check if the user is logged in
-    if request.user.is_authenticated:
-        # get or create the candidate object for the user
-        candidate, created = Candidate.objects.get_or_create(user=request.user)
-        # if a new candidate object was created, you can set some default values for the fields
-        if created:
-            candidate.years_of_experience = 0
-            candidate.date_of_birth = None
-            candidate.gender = None
-            candidate.address = None
-            candidate.contact_number = None
-            candidate.email = request.user.email
-            candidate.save()
+    job = get_object_or_404(Job, pk=job_id)
+    user = request.user
 
-        # check if the candidate has already applied for the job
-        if Application.objects.filter(job=job, candidate=candidate).exists():
-            # redirect to a page that shows the application status
-            return redirect('application_status', job_id=job_id)
+    try:
+        candidate = Candidate.objects.get(user=user)
+    except Candidate.DoesNotExist:
+        # Redirect user to profile update page if they are not a candidate
+        return redirect('update_profile')
 
-        # create a candidate form instance with the candidate data
-        candidate_form = CandidateForm(instance=candidate)
+    # Check if the user has already applied for the job
+    has_applied = Application.objects.filter(job=job, candidate=candidate).exists()
 
-        # create an education formset class using the inlineformset_factory function
-        EducationFormSet = inlineformset_factory(Candidate, Education, form=EducationForm, formset=EducationFormSet,
-                                                 extra=1)
-        # check if the candidate object is not None
-        if candidate is not None:
-            # create an education formset instance with the candidate's educations
-            education_formset = EducationFormSet(instance=candidate)
-        else:
-            # create an empty education formset instance
-            education_formset = EducationFormSet()
-
-        # check if the request method is POST
+    if not has_applied:
+        # Only allow applying if the user has not applied before
         if request.method == 'POST':
-            # update the candidate form and education formset with the submitted data
-            candidate_form = CandidateForm(request.POST, request.FILES, instance=candidate)
-            education_formset = EducationFormSet(request.POST, instance=candidate)
+            # Process the application form submission here
+            Application.objects.create(job=job, candidate=candidate, is_qualified=False)
+            send_email_view('devisarineitwe2000@gmail.com', f"you have successfully applied for the {job.title} Kindly stay alert for more details")
+            return redirect('application_status', job_id=job.id)
 
-            # check if the forms are valid
-            if candidate_form.is_valid() and education_formset.is_valid():
-                # save the candidate form and education formset
-                candidate_form.save()
-                education_formset.save()
+    return redirect('application_status', job_id=job.id)
+@login_required
+def withdraw_application(request, job_id):
+    context = {}
+    try:
+        # Print statements for debugging
+        print(f"Request user: {request.user}")
+        candidate = Candidate.objects.get(user=request.user)
+        print(f"Candidate user: {candidate.user}")
 
-                # create a new application object for the job and the candidate
-                application = Application(job=job, candidate=candidate)
-                application.save()
+        job = Job.objects.get(id=job_id)
+        print(f"Request job_id: {job_id}, Retrieved job_id: {job.id}")
 
-                # redirect to a page that shows the application success
-                return redirect('application_success', job_id=job_id)
+        application = Application.objects.filter(job=job, candidate=candidate).first()
 
-    # render the template with the forms and the job
-    return render(request, 'apply_job.html',
-                  {'candidate_form': candidate_form, 'education_formset': education_formset, 'job': job})
+        if application:
+            application.delete()
+            context = {'withdrawn': True, 'job_title': job.title, 'user': request.user,
+                       'candidate_user': candidate.user, 'job_id': job_id, 'retrieved_job_id': job.id}
+            send_email_view('devisarineitwe2000@gmail.com',
+                            f"Your application for {job.title} has been successfully withdrawn")
+        else:
+            context = {'withdrawn': False}
+    except Candidate.DoesNotExist or Job.DoesNotExist as e:
+        # Print the exception for debugging
+        print(f"Exception: {e}")
+        context = {'withdrawn': False}
+
+    return render(request, "Lyamu/withdraw_application.html", context)
+
+
+@login_required
+def update_profile(request):
+    user = request.user
+
+    try:
+        candidate = Candidate.objects.get(user=user)
+    except Candidate.DoesNotExist:
+        candidate = None
+
+    if request.method == 'POST':
+        # Process Candidate Form
+        resume = request.FILES.get('resume')
+        years_of_experience = request.POST.get('years_of_experience')
+        date_of_birth = request.POST.get('date_of_birth')
+        gender = request.POST.get('gender')
+        address = request.POST.get('address')
+        contact_number = request.POST.get('contact_number')
+        email = request.POST.get('email')
+
+        if candidate:
+            # Update existing candidate
+            candidate.resume = resume
+            candidate.years_of_experience = years_of_experience
+            candidate.date_of_birth = date_of_birth
+            candidate.gender = gender
+            candidate.address = address
+            candidate.contact_number = contact_number
+            candidate.email = email
+            candidate.save()
+        else:
+            # Create a new candidate if none exists
+            Candidate.objects.create(
+                user=user,
+                resume=resume,
+                years_of_experience=years_of_experience,
+                date_of_birth=date_of_birth,
+                gender=gender,
+                address=address,
+                contact_number=contact_number,
+                email=email
+            )
+
+        # Process Education Forms
+        education_form_prefix = 'education_form'
+        education_form_count = int(request.POST.get(f'{education_form_prefix}-TOTAL_FORMS', 0))
+
+        for i in range(education_form_count):
+            year = request.POST.get(f'{education_form_prefix}-{i}-year')
+            institution = request.POST.get(f'{education_form_prefix}-{i}-institution')
+            qualification = request.POST.get(f'{education_form_prefix}-{i}-qualification')
+
+            # Check if the education record already exists
+            if candidate:
+                education, created = Education.objects.get_or_create(candidate=candidate, year=year,
+                                                                     institution=institution)
+                education.qualification = qualification
+                if year and institution and qualification:
+                    # Save the education record if all fields are filled
+                    education.save()
+                else:
+                    # Delete the education record if any field is empty
+                    education.delete()
+            else:
+                # Create a new candidate and then save the education record
+                new_candidate = Candidate.objects.create(
+                    user=user,
+                    resume=None,  # You may need to update this based on your requirements
+                    years_of_experience=None,
+                    date_of_birth=None,
+                    gender=None,
+                    address=None,
+                    contact_number=None,
+                    email=None
+                )
+                Education.objects.create(candidate=new_candidate, year=year, institution=institution,
+                                         qualification=qualification)
+
+        return redirect('view_profile')  # Redirect to a success page or profile view
+
+    else:
+        # Render the Candidate and Education Forms
+        education_forms = Education.objects.filter(candidate=candidate)
+        return render(request, 'Lyamu/update_profile.html',
+                      {'candidate': candidate, 'education_forms': education_forms})
 
 
 
+@login_required
+def view_profile(request):
+    user = request.user
 
+    try:
+        candidate = Candidate.objects.get(user=user)
+        education_forms = Education.objects.filter(candidate=candidate)
+    except Candidate.DoesNotExist:
+        candidate = None
+        education_forms = None
+
+    return render(request, 'Lyamu/view_profile.html', {'user': user, 'candidate': candidate, 'education_forms': education_forms})
+
+
+@login_required
 def application_status(request, job_id):
     # get the job object from the database
     job = Job.objects.get(id=job_id)
@@ -235,3 +330,20 @@ def selections(request):
 def candidates(request):
     total_candidates = Candidate.objects.count()
     return render(request, "Lyamu/candidates_page.html", {'total_candidates': total_candidates})
+
+
+def send_email_view(email, message):
+    # Get the email address and the message from the request
+    email = email
+    message = message
+
+    # Send the email using the send_mail function
+    send_mail(
+        subject='Notification from Lyamu',
+        message=message,
+        from_email=None, # Use the default from email
+        recipient_list=[email], # Send to the email address
+    )
+
+    # Return a success message or redirect to another page
+    return True

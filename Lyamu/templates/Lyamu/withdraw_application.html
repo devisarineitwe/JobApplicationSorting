@@ -1,0 +1,9 @@
+{% if withdrawn %}
+    <p>Withdrawal successful for {{ user }} on job {{ job_title }}.</p>
+    <p>Request user: {{ user }}</p>
+    <p>Candidate user: {{ candidate_user }}</p>
+    <p>Request job_id: {{ job_id }}, Retrieved job_id: {{ retrieved_job_id }}</p>
+{% else %}
+    <p>Withdrawal Failed</p>
+    <p>There was an issue withdrawing your application. Please try again later.</p>
+{% endif %}

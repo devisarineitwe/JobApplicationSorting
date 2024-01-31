@@ -31,7 +31,7 @@ class Candidate(models.Model):
     resume = models.FileField(upload_to='resumes/',null=True, blank=True, verbose_name='Resume')
     applied_jobs = models.ManyToManyField(Job, through='Application')
     years_of_experience = models.IntegerField(null=True, blank=True, verbose_name='Years of experience')
-    date_of_birth = models.IntegerField(null=True, blank=True, verbose_name='Date of birth')
+    date_of_birth = models.DateTimeField(null=True, blank=True, verbose_name='Date of birth')
     gender = models.CharField(max_length=10, null=True, blank=True, verbose_name='Gender')
     address = models.TextField(null=True, blank=True, verbose_name='Address')
     contact_number = models.CharField(max_length=15, null=True, blank=True, verbose_name='Contact number')
@@ -45,9 +45,9 @@ class Candidate(models.Model):
 
 class Education(models.Model):
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='educations')
-    year = models.IntegerField()
-    institution = models.CharField(max_length=255)
-    qualification = models.CharField(max_length=255)
+    year = models.IntegerField(null=True)
+    institution = models.CharField(max_length=255, null=True)
+    qualification = models.CharField(max_length=255, null=True)
 
     def __str__(self):
         return f"{self.candidate.user.username}'s education at {self.institution}"

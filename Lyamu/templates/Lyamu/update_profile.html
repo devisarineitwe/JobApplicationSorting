@@ -1,0 +1,95 @@
+<!-- yourapp/templates/edit_profile.html -->
+{% extends 'Lyamu/base.html' %}  <!-- Extend your base template if you have one -->
+
+{% block content %}
+
+    <div class="container mt-4">
+        <h2>Edit Profile</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Candidate Form -->
+            <div class="mb-3">
+                <label for="resume" class="form-label">Current Resume:</label>
+                {% if candidate.resume %}
+                    <p>{{ candidate.resume.name }}</p>
+                {% else %}
+                    <p>No resume uploaded</p>
+                {% endif %}
+                <input type="file" name="resume" class="form-control" accept=".pdf, .doc, .docx">
+                <label for="years_of_experience" class="form-label">Years of Experience:</label>
+                <input type="number" name="years_of_experience" class="form-control" value="{{ candidate.years_of_experience }}">
+                <label for="date_of_birth" class="form-label">Date of Birth:</label>
+                <input type="datetime-local" name="date_of_birth" class="form-control" value="{% if candidate.date_of_birth %}{{ candidate.date_of_birth|date:'Y-m-d' }}T{{ candidate.date_of_birth|time:'H:i' }}{% endif %}">
+                <label for="gender" class="form-label">Gender:</label>
+                <input type="text" name="gender" class="form-control" value="{{ candidate.gender }}">
+                <label for="address" class="form-label">Address:</label>
+                <textarea name="address" class="form-control">{{ candidate.address }}</textarea>
+                <label for="contact_number" class="form-label">Contact Number:</label>
+                <input type="text" name="contact_number" class="form-control" value="{{ candidate.contact_number }}">
+                <label for="email" class="form-label">Email:</label>
+                <input type="email" name="email" class="form-control" value="{{ candidate.email }}">
+            </div>
+
+            <!-- Education Forms -->
+            <h3>Education Records</h3>
+            <div id="education-forms">
+                <!-- Management form inputs -->
+                <input type="hidden" name="education_form-TOTAL_FORMS" value="{{ education_forms|length }}">
+                <input type="hidden" name="education_form-INITIAL_FORMS" value="{{ education_forms|length }}">
+                <input type="hidden" name="education_form-MIN_NUM_FORMS" value="0">
+                <input type="hidden" name="education_form-MAX_NUM_FORMS" value="1000">
+
+                {% for form in education_forms %}
+                    <div class="mb-3">
+                        <label for="education_form-{{ forloop.counter0 }}-year" class="form-label">Year:</label>
+                        <input type="text" name="education_form-{{ forloop.counter0 }}-year" class="form-control" value="{{ form.year }}">
+                        <label for="education_form-{{ forloop.counter0 }}-institution" class="form-label">Institution:</label>
+                        <input type="text" name="education_form-{{ forloop.counter0 }}-institution" class="form-control" value="{{ form.institution }}">
+                        <label for="education_form-{{ forloop.counter0 }}-qualification" class="form-label">Qualification:</label>
+                        <input type="text" name="education_form-{{ forloop.counter0 }}-qualification" class="form-control" value="{{ form.qualification }}">
+                        <button type="button" class="remove-education-form btn btn-danger">Remove</button>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" id="add-education-form" class="btn btn-primary mt-2">Add Education</button>
+            <input type="submit" value="Update Profile" class="btn btn-success mt-3">
+        </form>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const educationFormsContainer = document.getElementById('education-forms');
+        const addEducationButton = document.getElementById('add-education-form');
+
+        addEducationButton.addEventListener('click', function () {
+            const formCount = educationFormsContainer.children.length;
+            const newFormHtml = document.createElement('div');
+
+            newFormHtml.innerHTML = `
+                <div class="mb-3">
+                    <label for="education_form-${formCount}-year" class="form-label">Year:</label>
+                    <input type="text" name="education_form-${formCount}-year" class="form-control">
+                    <label for="education_form-${formCount}-institution" class="form-label">Institution:</label>
+                    <input type="text" name="education_form-${formCount}-institution" class="form-control">
+                    <label for="education_form-${formCount}-qualification" class="form-label">Qualification:</label>
+                    <input type="text" name="education_form-${formCount}-qualification" class="form-control">
+                    <button type="button" class="remove-education-form btn btn-danger">Remove</button>
+                </div>
+            `;
+
+            educationFormsContainer.appendChild(newFormHtml);
+        });
+
+        educationFormsContainer.addEventListener('click', function (event) {
+            if (event.target.tagName === 'BUTTON' && event.target.classList.contains('remove-education-form')) {
+                event.preventDefault();
+                const formDiv = event.target.closest('div');
+                formDiv.parentNode.removeChild(formDiv);
+            }
+        });
+    });
+</script>
+
+{% endblock %}

@@ -1,20 +1,27 @@
 {% extends 'Lyamu/base.html' %}
+
+{% block title %}Application Status for {{ job.title }}{% endblock %}
+
 {% block content %}
-<h1>Application status for {{ job.title }}</h1>
-<p>{{ job.description }}</p>
-<p>Requirements: {{ job.requirements }}</p>
-<p>Importance level: {{ job.importance_level }}</p>
-<p>Application deadline: {{ job.application_deadline }}</p>
+    <div class="container mt-5">
+        <h1 class="text-purple">Application Status for {{ job.title }}</h1>
+        <div class="card bg-primary text-white mt-4">
+            <div class="card-body">
+                <h2>Your Application Details</h2>
+                <p>Application Date: {{ application.application_date }}</p>
+                <p>Is Qualified: {{ application.is_qualified }}</p>
 
-<h2>Your application details</h2>
-<p>Application date: {{ application.application_date }}</p>
-<p>Is qualified: {{ application.is_qualified }}</p>
+                <!-- Withdraw application button -->
+                <a href="{% url 'withdraw_application' job.id %}" class="btn btn-danger">Withdraw My Application</a>
 
-{% if selection %}
-<h2>Your selection details</h2>
-<p>Selection order: {{ selection.selection_order }}</p>
-<p>Congratulations! You have been selected for the job. You will receive a notification soon with further instructions.</p>
-{% else %}
-<p>Sorry, you have not been selected for the job. Please keep applying for other jobs that match your profile.</p>
-{% endif %}
+                {% if selection %}
+                    <h2>Your Selection Details</h2>
+                    <p>Selection Order: {{ selection.selection_order }}</p>
+                    <p class="text-white font-weight-bold">Congratulations! You have been selected for the job. You will receive a notification soon with further instructions.</p>
+                {% else %}
+                    <p class="text-white font-weight-bold">Sorry, you have not been selected for the job. Please keep applying for other jobs that match your profile.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 {% endblock %}
